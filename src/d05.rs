@@ -20,7 +20,7 @@ fn parse(input: String) -> anyhow::Result<(Vec<VecDeque<char>>, Vec<(usize, usiz
 }
 
 fn parse_crates(crates_str: &str) -> Vec<VecDeque<char>> {
-    let mut crates: Vec<VecDeque<char>> = vec![VecDeque::new(); 9];
+    let mut crates = vec![VecDeque::new(); 9];
 
     for line in crates_str.lines().rev().skip(1) {
         line.chars()

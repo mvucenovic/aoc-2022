@@ -1,4 +1,5 @@
 use anyhow::Context;
+use itertools::FoldWhile::{Continue, Done};
 use itertools::Itertools;
 
 fn inputs() -> anyhow::Result<Vec<Vec<u32>>> {
@@ -41,48 +42,10 @@ fn is_visible(forest: &Vec<Vec<u32>>, coord: (usize, usize)) -> bool {
     let (dim_x, dim_y) = (forest[0].len(), forest.len());
     let tree = forest[y][x];
 
-    if x == 0 || x == dim_x - 1 || y == 0 || y == dim_y - 1 {
-        return true;
-    }
-
-    let mut visible_x = true;
-    let mut visible_y = true;
-
-    for ix in 0..x {
-        if forest[y][ix] >= tree {
-            visible_x = false;
-            break;
-        }
-    }
-
-    if !visible_x {
-        visible_x = true;
-        for ix in (x + 1)..dim_x {
-            if forest[y][ix] >= tree {
-                visible_x = false;
-                break;
-            }
-        }
-    }
-
-    for iy in 0..y {
-        if forest[iy][x] >= tree {
-            visible_y = false;
-            break;
-        }
-    }
-
-    if !visible_y {
-        visible_y = true;
-        for iy in (y + 1)..dim_y {
-            if forest[iy][x] >= tree {
-                visible_y = false;
-                break;
-            }
-        }
-    }
-
-    visible_x || visible_y
+    (0..x).all(|ix| forest[y][ix] < tree)
+        || (x + 1..dim_x).all(|ix| forest[y][ix] < tree)
+        || (0..y).all(|iy| forest[iy][x] < tree)
+        || (y + 1..dim_y).all(|iy| forest[iy][x] < tree)
 }
 
 pub fn part_02() -> anyhow::Result<usize> {
@@ -105,37 +68,27 @@ fn scenic_score(forest: &Vec<Vec<u32>>, coord: (usize, usize)) -> usize {
     let (dim_x, dim_y) = (forest[0].len(), forest.len());
     let tree = forest[y][x];
 
-    let mut left = 0;
-    for ix in (0..x).rev() {
-        left += 1;
-        if forest[y][ix] >= tree {
-            break;
+    let acc_x = |acc, ix| {
+        if forest[y][ix] < tree {
+            Continue(acc + 1)
+        } else {
+            Done(acc + 1)
         }
-    }
+    };
 
-    let mut right = 0;
-    for ix in (x + 1)..dim_x {
-        right += 1;
-        if forest[y][ix] >= tree {
-            break;
-        }
-    }
+    let left = (0..x).rev().fold_while(0, acc_x).into_inner();
+    let right = (x + 1..dim_x).fold_while(0, acc_x).into_inner();
 
-    let mut up = 0;
-    for iy in (0..y).rev() {
-        up += 1;
-        if forest[iy][x] >= tree {
-            break;
+    let acc_y = |acc, iy: usize| {
+        if forest[iy][x] < tree {
+            Continue(acc + 1)
+        } else {
+            Done(acc + 1)
         }
-    }
+    };
 
-    let mut down = 0;
-    for iy in (y + 1)..dim_y {
-        down += 1;
-        if forest[iy][x] >= tree {
-            break;
-        }
-    }
+    let up = (0..y).rev().fold_while(0, acc_y).into_inner();
+    let down = (y + 1..dim_y).fold_while(0, acc_y).into_inner();
 
     left * right * up * down
 }
